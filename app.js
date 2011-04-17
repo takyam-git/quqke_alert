@@ -11,54 +11,6 @@ var express = require('express'),
 
 var app = module.exports = express.createServer();
 
-/*
-var twitter = require('twitter'),
-	OAuth = require('oauth').OAuth;
-
-var consumer_key = 'UWvJ8EeOQvvrGsGXmGMQ',
-	consumer_key_secret = 'oNjPgyZDlFcW6lhqZcRdLgs394UlN7BwZLfdHuQ',
-	access_token = '',
-	access_token_secret = '';
-
-var oa = new OAuth(
-		"https://api.twitter.com/oauth/request_token",
-		"https://api.twitter.com/oauth/access_token",
-		consumer_key,
-		consumer_key_secret,
-		"1.0",
-		null,
-		"HMAC-SHA1"
-	),
-	e = new events.EventEmitter();
-
-oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
-	access_token = oauth_token;
-	access_token_secret = oauth_token_secret;
-	e.emit('twitter_authorized');
-});
-
-e.on('twitter_authorized', function(){
-	console.log(consumer_key);
-	console.log(consumer_key_secret);
-	console.log(access_token);
-	console.log(access_token_secret);
-
-	var twit = new twitter({
-		consumer_key: consumer_key,
-		consumer_secret: consumer_key_secret,
-		access_token_key: access_token,
-		access_token_secret: access_token_secret
-	});
-
-	twit.stream('user', { track : 'takyam' }, function(stream){
-		stream.on('data', function(data){
-			console.log(data);
-		});
-	});
-});
-
-*/
-
 // Configuration
 http.get({
 	'host' : 'twitter.com',
