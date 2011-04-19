@@ -4,9 +4,10 @@
 
 var express = require('express'),
 	io = require('socket.io'),
-	http = require('./libs/http-basic-auth'),
 	sys = require('sys'),
-	events = require('events');
+	http = require('./libs/http-basic-auth'),
+	events = require('events'),
+	TwitterNode = require('twitter-node').TwitterNode;
 
 var app = module.exports = express.createServer();
 
@@ -54,10 +55,13 @@ var socket = io.listen(app);
 var twitter = require('twitter'),
 	OAuth = require('oauth').OAuth;
 
-var consumer_key = 'UWvJ8EeOQvvrGsGXmGMQ',
-	consumer_key_secret = 'oNjPgyZDlFcW6lhqZcRdLgs394UlN7BwZLfdHuQ',
+var consumer_key = '2MZRf7DdgHNalQB0g6rcmw',
+	consumer_key_secret = 'k7LzeFjkNZJixqe3tzQTnVzwtyu26rKMTzMKC02xc',
+	//access_token = '283406055-efL6CfkXTA3egwColBalqWIRoFSPZp6QmbKmDWKx',
+	//access_token_secret = 'OPuvcmIFghRb2qvh1DnbGJ6cYpPc2NlBungdj5vQ',
 	access_token = '',
-	access_token_secret = '';
+	access_token_secret = '',
+	follow_user_id =283406055;
 
 var oa = new OAuth(
 	"https://api.twitter.com/oauth/request_token",
@@ -70,54 +74,52 @@ var oa = new OAuth(
 ),
 e = new events.EventEmitter();
 
-oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
-	access_token = oauth_token;
-	access_token_secret = oauth_token_secret;
+if(access_token == '' || access_token_secret == ''){
+	oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
+		console.log(arguments);
+		console.warn('http://twitter.com/oauth/authorize?oauth_token=' + oauth_token + "\n");
+		var stdin = process.openStdin();
+		console.warn('PIN: ');
+		stdin.on('data', function(d) {
+			d = (d+'').trim();
+			if(!d) {
+				console.warn('\nTry again: ');
+			}
+			console.warn('Received PIN: ' + d);
+			oa.getOAuthAccessToken(oauth_token, oauth_token_secret, d, function(error, oauth_access_token, oauth_access_token_secret, results2) {
+				console.log(arguments);
+				access_token = oauth_access_token;
+				access_token_secret = oauth_access_token_secret;
+				e.emit('twitter_authorized');
+			});
+		});
+	});
+}else{
 	e.emit('twitter_authorized');
-});
+};
 
 e.on('twitter_authorized', function(){
-	console.log(consumer_key,consumer_key_secret,access_token,access_token_secret);
-
-
 	var twit = new twitter({
 		consumer_key: consumer_key,
 		consumer_secret: consumer_key_secret,
 		access_token_key: access_token,
 		access_token_secret: access_token_secret
 	});
-
-	twit.stream('user', null, function(stream) {
-    	stream.on('data', function (data) {
-	        sys.puts(sys.inspect(data));
-    	});
-	});
-/*
-twit.stream('user', {track:'takyam'}, function(stream) {
-    stream.on('data', function (data) {
-        sys.puts(sys.inspect(data));
-    });
-    // Disconnect stream after five seconds
-    //setTimeout(stream.destroy, 5000);
-});
-*/
-/*	twit.stream('user', { track : 'takyam' }, function(stream){
-		console.log(stream);
-		stream.on('data', function(data){
-			console.log(data);
+	twit.stream('user', {track : 'follow=' + follow_user_id.toString()}, function(stream) {
+		stream.on('data', function (data) {
+			if(typeof(data)=='object' && data.user){
+				if(data.user.screen_name == 'get_jishin_news'){
+					console.log('--------------------------------------------');
+					console.log('USER_NAME     : ' + data.user.screen_name.toString());
+					console.log('USER_ID       : ' + data.user.id.toString());
+					console.log('USER_TWEET    : ' + data.text.toString());
+					console.log('USER_TWEET_ID : ' + data.id_str.toString());
+					console.log('--------------------------------------------');
+				};
+			}
 		});
 	});
-*/
 });
-
-
-
-
-
-
-
-
-
 //mongooseに格納
 //->
 //差分があればブロードキャスト
@@ -126,6 +128,6 @@ socket.broadcast('hogegege');
 // Only listen on $ node app.js
 
 if (!module.parent) {
-	app.listen(3000);
+	app.listen(3333);
 	console.log("Express server listening on port %d", app.address().port);
 }
