@@ -1,12 +1,21 @@
 /*
  * loader from amachang's blog >> http://d.hatena.ne.jp/amachang/20071116/1195202294
  */
+var host = 'www2133u.sakura.ne.jp',
+	ip = '3333',
+	fadeout_speed = 5000;
+
 var load = function(src, check, next) {
 	check = new Function('return !!(' + check + ')');
 	if(!check()){
 		var script = document.createElement('script');
 		script.src = src;
-		document.head.appendChild(script);
+		//document.head.appendChild(script);
+		document.documentElement.getElementsByTagName('HEAD')[0].appendChild(script);
+
+
+
+
 		setTimeout(function() {
 			if(!check()){
 				setTimeout(arguments.callee, 100);
@@ -19,7 +28,7 @@ var load = function(src, check, next) {
 };
 
 window.onload = function(){
-	load('http://localhost:3000/socket.io/socket.io.js', 'window.io', function() {
+	load('http://' + host + ':' + ip + '/socket.io/socket.io.js', 'window.io', function() {
 		if(!window.jQuery){
 			load('http://code.jquery.com/jquery-latest.js', 'window.jQuery', function() {
 				if($ && $!=jQuery){
@@ -47,7 +56,7 @@ function quake_alert(){
 				$(this).stop().hide();
 			});
 			$('body').append(this.alert_box);
-			this.alert = function(msg, scale){
+			this.alert = function(text, url){
 				var o = $(document);
 				var w = {
 					'width'  : o.width() - ( parent.config.border * 2 ) - (parent.config.padding * 2),
@@ -56,17 +65,19 @@ function quake_alert(){
 				parent.alert_box.css({
 					'width'       : w.width.toString() + 'px',
 					'height'      : w.height.toString() + 'px'
-				})
-				.html('<p>【緊急地震速報】</p><p>震度' + scale + '</p><p style="margin:20px 0;">' + msg + '</p><p style="font-size:50%;"></p>')
-				.show().fadeOut(3000);
+				}).stop().show().css('opacity', '1')
+				.html('<p>【緊急地震速報】</p><p>' + text + '</p><p style="margin:20px 0;"><a href="' + url + '" target="_blank">' + url + '</a></p><p style="font-size:50%;"></p>')
+				.fadeOut(fadeout_speed);
 			};
 			
-			var socket = new io.Socket('localhost', {'port' : 3000});
+			var socket = new io.Socket(host, {'port' : parseInt(ip)});
 			socket.connect();
 			socket.on('message', function(data){
-				parent.alert(data);
+				var text = data.replace(/\s?https?\:\/\/.+$/, '').replace(/(震度.+?)\s/, '<span style="font-size:300%;">$1</span>');
+				var urlmatch  = data.match(/https?\:\/\/.+/);
+				var url = urlmatch != null ? urlmatch[0] : '';
+				parent.alert(text, url);
 			});
-			socket.send('ddd');
 		});
 	})(jQuery);
 };

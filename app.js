@@ -7,9 +7,32 @@ var express = require('express'),
 	sys = require('sys'),
 	http = require('./libs/http-basic-auth'),
 	events = require('events'),
-	TwitterNode = require('twitter-node').TwitterNode;
+	querystring = require('querystring'),
+	TwitterNode = require('twitter-node').TwitterNode,
+	mongoose = require('mongoose');
 
-var app = module.exports = express.createServer();
+var app = module.exports = express.createServer(),
+	Schema = mongoose.Schema,
+	ObjectId = Schema.ObjectId;
+
+//mongoose connect
+mongoose.connect('mongodb://localhost/quake_alert');
+
+//mongoose schema settings
+var Tweets = new Schema({
+	'id'         : ObjectId,
+	'id_str'     : String,
+	'user_id'    : String,
+	'tweet'      : String,
+	'tweet_date' : String,
+	'date' : {
+		'type'    : Date,
+		'default' : Date.now
+	}
+});
+mongoose.model('Tweets', Tweets);
+
+var tweetsModel = mongoose.model('Tweets');
 
 // Configuration
 app.configure(function(){
@@ -61,7 +84,7 @@ var consumer_key = '2MZRf7DdgHNalQB0g6rcmw',
 	//access_token_secret = 'OPuvcmIFghRb2qvh1DnbGJ6cYpPc2NlBungdj5vQ',
 	access_token = '',
 	access_token_secret = '',
-	follow_user_id =283406055;
+	follow_user_ids = '97451189,22603700,283406055';
 
 var oa = new OAuth(
 	"https://api.twitter.com/oauth/request_token",
@@ -105,25 +128,56 @@ e.on('twitter_authorized', function(){
 		access_token_key: access_token,
 		access_token_secret: access_token_secret
 	});
-	twit.stream('user', {track : 'follow=' + follow_user_id.toString()}, function(stream) {
+	//console.log('#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#');
+	//console.log(follow_user_ids);
+	//console.log('#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#');
+	//console.log(follow_user_ids.join(','));
+	//console.log('#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#');
+	//console.log(querystring.stringify(follow_user_ids.join(',')));
+	//console.log('#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#');
+	twit.stream('user', function(stream) { // { follow : follow_user_ids }, function(stream) {
+		//console.log(twit);
 		stream.on('data', function (data) {
+			//console.log(data);
 			if(typeof(data)=='object' && data.user){
-				if(data.user.screen_name == 'get_jishin_news'){
+				if(data.user.screen_name == 'get_jishin_news' || data.user.screen_name == 'clbot_eew'){ // || data.user.screen_name == 'takyam'){
+					//console.log(data);
 					console.log('--------------------------------------------');
 					console.log('USER_NAME     : ' + data.user.screen_name.toString());
 					console.log('USER_ID       : ' + data.user.id.toString());
 					console.log('USER_TWEET    : ' + data.text.toString());
 					console.log('USER_TWEET_ID : ' + data.id_str.toString());
 					console.log('--------------------------------------------');
+
+					tweetsModel.find({'id_str' : data.id_str}, function(err, doc){
+						//console.log('##### TWEETS MODEL #####');
+						//console.log(arguments);
+						//console.log('########################');
+						if(!err && doc.length == 0){
+							var tweets = new tweetsModel();
+							tweets.id_str     = data.id_str;
+							tweets.user_id    = data.user.id;
+							tweets.tweet      = data.text;
+							tweets.tweet_date = data.created_at;
+							tweets.save(function(err){
+								//console.log('##### TWEETS SAVE #####');
+								//console.log(arguments);
+								//console.log('#######################');
+								if(!err){
+									socket.broadcast(data.text.toString());
+								};
+							});
+						};
+					});	
 				};
-			}
+			};
 		});
 	});
 });
 //mongooseに格納
 //->
 //差分があればブロードキャスト
-socket.broadcast('hogegege');
+//socket.broadcast('hogegege');
 
 // Only listen on $ node app.js
 
