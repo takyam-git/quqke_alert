@@ -6,3 +6,29 @@ body {
 a {
   color: #00B7FF;
 }
+
+blockquote {
+display: block;
+padding: 0 60px;
+width: 850px;
+margin: 60px 0;
+}
+
+blockquote:before, blockquote:after {
+color: #69c;
+display: block;
+		 font-size: 700%;
+width: 50px;
+		   }
+
+blockquote:before {
+content: '\201C';
+height: 0;
+		margin-left: -0.55em;
+		   }
+blockquote:after {
+content: '\201D';
+height: 50px;
+		margin-top: -70px;
+		margin-left: 780px;
+		   }

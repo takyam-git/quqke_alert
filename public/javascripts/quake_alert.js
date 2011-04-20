@@ -3,7 +3,7 @@
  */
 var host = 'www2133u.sakura.ne.jp',
 	ip = '3333',
-	fadeout_speed = 5000;
+	fadeout_speed = 1000;
 
 var load = function(src, check, next) {
 	check = new Function('return !!(' + check + ')');
@@ -51,23 +51,49 @@ function quake_alert(){
 				'border'  : 5,
 				'padding' : 40
 			};
-			this.alert_box = $('<div id="_quake_alert_box" style="padding:' + this.config.padding.toString() + 'px;color:#fff;font-size:200%;font-weight:bold;background-color:#f00;border:' + this.config.border.toString() + 'px solid #000;position:absolute;top:0;left:0;z-index:9999;text-align:center;display:none;"></div>');
-			this.alert_box.click(function(){
-				$(this).stop().hide();
-			});
-			$('body').append(this.alert_box);
+			this.alert_box = '<div style="padding:' + this.config.padding.toString() + 'px;color:#fff;font-size:200%;font-weight:bold;background-color:#f00;border:' + this.config.border.toString() + 'px solid #000;position:absolute;top:0;left:0;z-index:9999;text-align:center;display:none;"></div>';
+			this.showed = 0;
 			this.alert = function(text, url){
+				var box = $(parent.alert_box);
+				$('body').append(box);
+				box.click(function(){
+					parent.showed = parent.showed > 0 ? parent.showed - 1 : 0;
+					$(this).stop().hide();
+				});
 				var o = $(document);
 				var w = {
 					'width'  : o.width() - ( parent.config.border * 2 ) - (parent.config.padding * 2),
 					'height' : o.height() - ( parent.config.border * 2 ) - (parent.config.padding * 2)
 				};
-				parent.alert_box.css({
+				parent.showed++;
+				box.css({
 					'width'       : w.width.toString() + 'px',
 					'height'      : w.height.toString() + 'px'
 				}).stop().show().css('opacity', '1')
 				.html('<p>【緊急地震速報】</p><p>' + text + '</p><p style="margin:20px 0;"><a href="' + url + '" target="_blank">' + url + '</a></p><p style="font-size:50%;"></p>')
-				.fadeOut(fadeout_speed);
+				.animate({
+					'opacity' : '1'
+				},{
+					'duration' : fadeout_speed,
+					'complete' : function(){
+						var opdate = new Date();
+						$(this).css({
+							'padding'   : '5px 0px',
+							'position'  : 'fixed',
+							'height'    : '20px',
+							'font-size' : '14px',
+							'position'  : 'fixed',
+							'width'     : $(window).width() - 10,
+							'bottom'    : 0 + ((parent.showed-1)*40),
+							'top'       : 'auto'
+						}).html((box.text().replace('【緊急地震速報】', '').replace(/(http\:\/\/.+?)(\s|$)/, "&nbsp;&nbsp;=>&nbsp;&nbsp;<a style=\"text-decoration:underline;\" href=\"$1\" target=\"_blank\">$1</a>")))
+						.hover(function(){
+							$(this).css('cursor', 'pointer');
+						},function(){
+							$(this).css('cursor', 'default');
+						});
+					}
+				});
 			};
 			
 			var socket = new io.Socket(host, {'port' : parseInt(ip)});
